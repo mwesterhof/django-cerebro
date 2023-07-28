@@ -116,4 +116,4 @@ MEDIA_ROOT = BASE_DIR / 'cerebro' / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-NET_PATH = MEDIA_ROOT / 'brain.net'
+NET_PATH = MEDIA_ROOT
