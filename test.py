@@ -26,9 +26,11 @@ def get_random_data():
         pages_visited=random.randint(1, 100),
     )
     if visitor.time_spent > visitor.pages_visited:
-        visitor.conversion_target_a = 1
+        if random.randint(1, 10) > 1:
+            visitor.conversion_target_a = 1
     if visitor.pages_visited > visitor.time_spent * 2:
-        visitor.conversion_target_b = 1
+        if random.randint(1, 10) > 1:
+            visitor.conversion_target_b = 1
 
     return visitor
 
