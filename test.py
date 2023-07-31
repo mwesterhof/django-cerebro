@@ -22,13 +22,13 @@ class Visitor:
 
 def get_random_data():
     visitor = Visitor(
-        time_spent=random.randint(1, 100),
-        pages_visited=random.randint(1, 100),
+        time_spent=random.randint(20, 100),
+        pages_visited=random.randint(2, 15),
     )
-    if visitor.time_spent > visitor.pages_visited:
+    if 40 < visitor.time_spent < 70:
         if random.randint(1, 10) > 1:
             visitor.conversion_target_a = 1
-    if visitor.pages_visited > visitor.time_spent * 2:
+    if visitor.pages_visited * 10 > visitor.time_spent:
         if random.randint(1, 10) > 1:
             visitor.conversion_target_b = 1
 
