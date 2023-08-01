@@ -9,28 +9,28 @@ import requests
 import random
 
 
-url = 'http://localhost:8000/register/'
+url = 'http://localhost:8000/first-classifier/register/'
 
 @dataclass
 class Visitor:
-    time_spent: int = 0
-    pages_visited: int = 0
+    A: int = 0
+    B: int = 0
 
-    conversion_target_a: int = 0
-    conversion_target_b: int = 0
+    C: int = 0
+    D: int = 0
 
 
 def get_random_data():
     visitor = Visitor(
-        time_spent=random.randint(20, 100),
-        pages_visited=random.randint(2, 15),
+        A=random.randint(20, 100),
+        B=random.randint(2, 15),
     )
-    if 40 < visitor.time_spent < 70:
+    if 40 < visitor.A < 70:
         if random.randint(1, 10) > 1:
-            visitor.conversion_target_a = 1
-    if visitor.pages_visited * 10 > visitor.time_spent:
+            visitor.C = 1
+    if visitor.B * 10 > visitor.A:
         if random.randint(1, 10) > 1:
-            visitor.conversion_target_b = 1
+            visitor.D = 1
 
     return visitor
 
@@ -38,8 +38,8 @@ def get_random_data():
 for _ in range(10000):
     visitor = get_random_data()
     requests.post(url, {
-        'time_spent': visitor.time_spent,
-        'pages_visited': visitor.pages_visited,
-        'conversion_target_a': visitor.conversion_target_a,
-        'conversion_target_b': visitor.conversion_target_b,
+        'A': visitor.A,
+        'B': visitor.B,
+        'C': visitor.C,
+        'D': visitor.D,
     })

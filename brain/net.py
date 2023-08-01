@@ -1,4 +1,6 @@
+import io
 import pickle
+from warnings import catch_warnings
 
 from django.conf import settings
 from django.core.files import File
@@ -6,45 +8,38 @@ from django.core.files import File
 from sklearn.neural_network import MLPClassifier
 from sklearn.preprocessing import StandardScaler
 
-from .models import VisitorBehavior
-
 
 BRAIN_PATH = settings.NET_PATH / 'brain.net'
 SCALER_PATH = settings.NET_PATH / 'scaler.net'
 
 
-class VisitorClassifier:
-    def __init__(self, load=True, train=False):
-        if load:
-            self.load()
-        else:
-            self.initialize()
+class DataPointClassifier:
+    def __init__(self, *args, **kwargs):
+        self.scikit_classifier = MLPClassifier(*args, **kwargs)
 
-        if train:
-            self.train()
+    def train(self, data_points):
+        X = [point.sample_list for point in data_points]
+        y = [point.feature_list for point in data_points]
 
-    def initialize(self, solver='sgd', alpha=1e-5, hidden_layer_sizes=(5, 2), random_state=1, max_iter=10000):
-        self.net = MLPClassifier(
-            solver=solver,
-            alpha=alpha,
-            hidden_layer_sizes=hidden_layer_sizes,
-            random_state=random_state,
-            max_iter=max_iter,
-        )
-        self.scaler = StandardScaler()
+        scaler = StandardScaler()
+        scaler.fit(X)
 
-    def train(self):
-        visitors = VisitorBehavior.objects.all()
-        X = [visitor.sample for visitor in visitors]
-        y = [visitor.feature for visitor in visitors]
+        X = scaler.transform(X)
+        with catch_warnings(record=True) as training_warnings:
+            self.scikit_classifier.fit(X, y)
+        
+        with io.BytesIO() as net_buffer:
+            net_file = File(net_buffer)
+            pickle.dump(self.scikit_classifier, net_file)
 
-        self.scaler.fit(X)
-        X = self.scaler.transform(X)
+        with io.BytesIO() as scaler_buffer:
+            scaler_file = File(scaler_buffer)
+            pickle.dump(scaler, scaler_file)
 
-        self.net.fit(X, y)
+        return net_file, scaler_file, training_warnings
 
-    def predict_conversion(self, visitors):
-        behaviors = [visitor.sample for visitor in visitors]
+    def predict_conversion(self, data_points):
+        behaviors = [point.sample for point in data_points]
         behaviors = self.scaler.transform(behaviors)
         return self.net.predict(behaviors)
 
