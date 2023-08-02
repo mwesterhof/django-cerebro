@@ -1,9 +1,3 @@
-"""
-generate randomized test data containing two patterns
-1. conversion_target_a is true (1) when time_spent > pages_visited
-2. conversion_target_b is true (1) when pages_visited > (2 X time_spent)
-3. in all other cases, both targets will be false (0)
-"""
 from dataclasses import dataclass
 import requests
 import random
