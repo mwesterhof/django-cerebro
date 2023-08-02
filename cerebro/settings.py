@@ -21,6 +21,7 @@ ALLOWED_HOSTS = []
 INSTALLED_APPS = [
     'brain',
     'rest_framework',
+    'jazzmin',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -28,6 +29,16 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 ]
+
+JAZZMIN_SETTINGS = {
+    'site_title': 'CereBro admin',
+    'site_header': 'CereBro',
+    'site_brand': 'CereBro admin',
+    'welcome_sign': 'Welcome to the CereBro admin',
+    'site_logo': 'site_logo.png',
+    'copyright': 'Lukkien',
+    'show_ui_builder': True,
+}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

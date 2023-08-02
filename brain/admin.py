@@ -4,10 +4,12 @@ from .models import ClassifierConfig, ClassifierFeature, ClassifierSample, DataP
 
 
 class ClassifierSampleInline(admin.TabularInline):
+    extra = 0
     model = ClassifierSample
 
 
 class ClassifierFeatureInline(admin.TabularInline):
+    extra = 0
     model = ClassifierFeature
 
 
