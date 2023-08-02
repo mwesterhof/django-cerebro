@@ -17,6 +17,7 @@ class ClassifierConfigAdmin(admin.ModelAdmin):
     inlines = [ClassifierSampleInline, ClassifierFeatureInline]
     readonly_fields = ['training_warnings']
     actions = ['train']
+    list_display = ['__str__', 'data_count', 'training_success']
 
     fieldsets = [
         (
@@ -74,6 +75,13 @@ class ClassifierConfigAdmin(admin.ModelAdmin):
         for obj in queryset:
             obj.train()
         messages.success(request, "training done")
+
+    def data_count(self, instance):
+        return instance.data_points.count()
+
+    def training_success(self, instance):
+        return not bool(instance.training_warnings)
+    training_success.boolean = True
 
 
 class DataPointAdmin(admin.ModelAdmin):
