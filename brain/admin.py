@@ -1,4 +1,4 @@
-from django.contrib import admin
+from django.contrib import admin, messages
 
 from .models import ClassifierConfig, ClassifierFeature, ClassifierSample, DataPoint
 
@@ -13,10 +13,13 @@ class ClassifierFeatureInline(admin.TabularInline):
 
 class ClassifierConfigAdmin(admin.ModelAdmin):
     inlines = [ClassifierSampleInline, ClassifierFeatureInline]
+    readonly_fields = ['training_warnings']
+    actions = ['train']
+
     fieldsets = [
         (
             None, {
-                'fields': ['name', 'slug', 'short_description'],
+                'fields': ['name', 'slug', 'short_description', 'training_warnings'],
             },
         ),
         (
@@ -63,6 +66,12 @@ class ClassifierConfigAdmin(admin.ModelAdmin):
             }
         ),
     ]
+
+    @admin.action(description="Train this classifier on available data")
+    def train(self, request, queryset):
+        for obj in queryset:
+            obj.train()
+        messages.success(request, "training done")
 
 
 class DataPointAdmin(admin.ModelAdmin):

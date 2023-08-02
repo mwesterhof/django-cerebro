@@ -30,7 +30,7 @@ class DataPointSerializerBase(serializers.Serializer):
         return result
 
 
-def get_serializer_from_config(config):
+def get_serializer_from_config(config, readonly_features=False):
     return type(
         'DataPointSerializer',
         (DataPointSerializerBase,),
@@ -41,16 +41,8 @@ def get_serializer_from_config(config):
                 (sample.name, serializers.IntegerField())
                 for sample in config.samples.all()
             ] + [
-                (feature.name, serializers.IntegerField())
+                (feature.name, serializers.IntegerField(read_only=readonly_features))
                 for feature in config.features.all()
             ]
         )
     )
-
-
-class DataPointSerializerForPrediction(serializers.Serializer):
-    time_spent = serializers.IntegerField()
-    pages_visited = serializers.IntegerField()
-
-    conversion_target_a = serializers.IntegerField(read_only=True)
-    conversion_target_b = serializers.IntegerField(read_only=True)

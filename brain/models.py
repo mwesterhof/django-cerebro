@@ -1,3 +1,4 @@
+from django.core.files.base import ContentFile
 from django.db import models
 from django.utils.text import slugify
 
@@ -31,6 +32,14 @@ def choicefield(choices):
         max_length=max([len(c) for c, _ in choices]),
         default=choices[0][0]
     )
+
+
+def parse_training_warnings(warnings):
+    lines = [
+        f"{warning.category.__name__}: {warning.message}"
+        for warning in warnings
+    ]
+    return '\n'.join(lines)
 
 
 class ClassifierConfig(models.Model):
@@ -69,14 +78,22 @@ class ClassifierConfig(models.Model):
 
     neural_net = models.FileField(null=True)
     scaler = models.FileField(null=True)
+    training_warnings = models.TextField(null=True, editable=False)
 
     def train(self):
-        net_file, scaler_file, training_warnings = self.get_classifier().train(self.data_points.all())
-        self.neural_net = net_file
-        self.scaler = scaler_file
-        self.training_warnings = training_warnings
-        import ipdb; ipdb.set_trace() 
+        net_data, scaler_data, training_warnings = self.get_classifier().train(self.data_points.all())
+
+        self.neural_net.delete()
+        self.neural_net.save(f"net_{self.slug}", ContentFile(net_data))
+
+        self.scaler.delete()
+        self.scaler.save(f"scaler_{self.slug}", ContentFile(scaler_data))
+
+        self.training_warnings = parse_training_warnings(training_warnings)
         self.save()
+
+    def classify(self, sample):
+        return self.get_classifier(load=True).classify(sample)
 
     def save(self, *args, **kwargs):
         # TODO: only allow changes to samples and features when there are no data points
@@ -86,37 +103,42 @@ class ClassifierConfig(models.Model):
             self.slug = slugify(self.name)
         return super().save(*args, **kwargs)
             
-    def get_classifier(self):
-        return DataPointClassifier(
-            hidden_layer_sizes=[int(size.strip()) for size in self.hidden_layer_sizes.split(',')],
-            activation=self.activation,
-            solver=self.solver,
-            alpha=self.alpha,
+    def get_classifier(self, load=False):
+        if load:
+            return DataPointClassifier(
+                load_from_db_instance=self
+            )
+        else:
+            return DataPointClassifier(
+                hidden_layer_sizes=[int(size.strip()) for size in self.hidden_layer_sizes.split(',')],
+                activation=self.activation,
+                solver=self.solver,
+                alpha=self.alpha,
 
-            batch_size=self.batch_size or 'auto',
-            learning_rate=self.learning_rate,
-            learning_rate_init=self.learning_rate_init,
-            power_t=self.power_t,
+                batch_size=self.batch_size or 'auto',
+                learning_rate=self.learning_rate,
+                learning_rate_init=self.learning_rate_init,
+                power_t=self.power_t,
 
-            max_iter=self.max_iter,
-            shuffle=self.shuffle,
-            random_state=self.random_state,
-            tol=self.tol,
+                max_iter=self.max_iter,
+                shuffle=self.shuffle,
+                random_state=self.random_state,
+                tol=self.tol,
 
-            verbose=self.verbose,
-            warm_start=self.warm_start,
-            momentum=self.momentum,
-            nesterovs_momentum=self.nesterovs_momentum,
+                verbose=self.verbose,
+                warm_start=self.warm_start,
+                momentum=self.momentum,
+                nesterovs_momentum=self.nesterovs_momentum,
 
-            early_stopping=self.early_stopping,
-            validation_fraction=self.validation_fraction,
-            beta_1=self.beta_1,
-            beta_2=self.beta_2,
+                early_stopping=self.early_stopping,
+                validation_fraction=self.validation_fraction,
+                beta_1=self.beta_1,
+                beta_2=self.beta_2,
 
-            epsilon=self.epsilon,
-            n_iter_no_change=self.n_iter_no_change,
-            max_fun=self.max_fun,
-        )
+                epsilon=self.epsilon,
+                n_iter_no_change=self.n_iter_no_change,
+                max_fun=self.max_fun,
+            )
 
     def __str__(self):
         return self.name
@@ -130,6 +152,9 @@ class ClassifierSample(models.Model):
     )
     name = models.CharField(max_length=200)
 
+    def __str__(self):
+        return self.name
+
 
 class ClassifierFeature(models.Model):
     config = models.ForeignKey(
@@ -138,6 +163,9 @@ class ClassifierFeature(models.Model):
         on_delete=models.CASCADE
     )
     name = models.CharField(max_length=200)
+
+    def __str__(self):
+        return self.name
 
 
 class DataPoint(models.Model):
