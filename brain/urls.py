@@ -5,6 +5,6 @@ from .views import PredictionView, DataPointCreate
 
 
 urlpatterns = format_suffix_patterns([
-    path('<slug:slug>/register/', DataPointCreate.as_view()),
-    path('<slug:slug>/predict/', PredictionView.as_view()),
+    path('<slug:slug>/register/', DataPointCreate.as_view(), name='register'),
+    path('<slug:slug>/predict/', PredictionView.as_view(), name='predict'),
 ])

@@ -42,7 +42,7 @@ def parse_training_warnings(warnings):
     return '\n'.join(lines)
 
 
-class ClassifierConfig(models.Model):
+class Classifier(models.Model):
     name = models.CharField(max_length=200)
     slug = models.SlugField(max_length=200, blank=True)
     short_description = models.TextField(blank=True, null=True)
@@ -146,7 +146,7 @@ class ClassifierConfig(models.Model):
 
 class ClassifierSample(models.Model):
     config = models.ForeignKey(
-        ClassifierConfig,
+        Classifier,
         related_name='samples',
         on_delete=models.CASCADE
     )
@@ -158,7 +158,7 @@ class ClassifierSample(models.Model):
 
 class ClassifierFeature(models.Model):
     config = models.ForeignKey(
-        ClassifierConfig,
+        Classifier,
         related_name='features',
         on_delete=models.CASCADE
     )
@@ -170,7 +170,7 @@ class ClassifierFeature(models.Model):
 
 class DataPoint(models.Model):
     config = models.ForeignKey(
-        ClassifierConfig,
+        Classifier,
         related_name='data_points',
         on_delete=models.CASCADE
     )

@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_extensions',  # TODO: remove after debugging
 ]
 
 JAZZMIN_SETTINGS = {
@@ -38,6 +39,12 @@ JAZZMIN_SETTINGS = {
     'site_logo': 'site_logo.png',
     'copyright': 'Lukkien',
     'show_ui_builder': True,
+    'icons': {
+        'brain.Classifier': 'fas fa-graduation-cap',
+        'brain.DataPoint': 'fas fa-chart-line',
+        'auth.Group': 'fas fa-users',
+        'auth.User': 'fas fa-user',
+    }
 }
 
 MIDDLEWARE = [

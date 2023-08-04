@@ -1,6 +1,6 @@
 from django.contrib import admin, messages
 
-from .models import ClassifierConfig, ClassifierFeature, ClassifierSample, DataPoint
+from .models import Classifier, ClassifierFeature, ClassifierSample, DataPoint
 
 
 class ClassifierSampleInline(admin.TabularInline):
@@ -13,7 +13,7 @@ class ClassifierFeatureInline(admin.TabularInline):
     model = ClassifierFeature
 
 
-class ClassifierConfigAdmin(admin.ModelAdmin):
+class ClassifierAdmin(admin.ModelAdmin):
     inlines = [ClassifierSampleInline, ClassifierFeatureInline]
     readonly_fields = ['training_warnings']
     actions = ['train']
@@ -89,5 +89,5 @@ class DataPointAdmin(admin.ModelAdmin):
     list_filter = ('config',)
 
 
-admin.site.register(ClassifierConfig, ClassifierConfigAdmin)
+admin.site.register(Classifier, ClassifierAdmin)
 admin.site.register(DataPoint, DataPointAdmin)

@@ -2,7 +2,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework import generics
 from rest_framework.response import Response
 
-from .models import ClassifierConfig, DataPoint
+from .models import Classifier, DataPoint
 from .net import DataPointClassifier
 from .serializers import get_serializer_from_config
 
@@ -13,7 +13,7 @@ class DynamicSerializerViewMixin:
         return super().dispatch(*args, **kwargs)
 
     def get_config(self):
-        return get_object_or_404(ClassifierConfig, slug=self.kwargs['slug'])
+        return get_object_or_404(Classifier, slug=self.kwargs['slug'])
 
     def get_serializer_class(self):
         return get_serializer_from_config(self.config)
@@ -30,7 +30,7 @@ class PredictionView(DynamicSerializerViewMixin, generics.GenericAPIView):
 
     def post(self, request, **kwargs):
         serializer_class = self.get_serializer_class()
-        request_serializer = serializer_class(data=request.POST)
+        request_serializer = serializer_class(data=request.data)
 
         if request_serializer.is_valid():
             sample = list(request_serializer.validated_data.values())
