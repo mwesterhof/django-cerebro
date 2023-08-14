@@ -1,4 +1,6 @@
 import pickle
+from collections.abc import Iterable
+from warnings import catch_warnings
 
 from django.conf import settings
 from django.core.files import File
@@ -6,62 +8,45 @@ from django.core.files import File
 from sklearn.neural_network import MLPClassifier
 from sklearn.preprocessing import StandardScaler
 
-from .models import VisitorBehavior
+
+def _scikit_1d_workaround(values):
+    if len(values[0]) == 1:
+        # every sample contains only one value
+        # scikit_learn expects a 1d list in this case, for some reason
+        return [i[0] for i in values]
+    return values
 
 
-BRAIN_PATH = settings.NET_PATH / 'brain.net'
-SCALER_PATH = settings.NET_PATH / 'scaler.net'
+class DataPointClassifier:
+    def __init__(self, *args, **kwargs):
+        instance = kwargs.pop('load_from_db_instance', None)
 
-
-class VisitorClassifier:
-    def __init__(self, load=True, train=False):
-        if load:
-            self.load()
+        if instance:
+            self.scikit_classifier = pickle.load(instance.neural_net)
+            self.scaler = pickle.load(instance.scaler)
         else:
-            self.initialize()
+            self.scikit_classifier = MLPClassifier(*args, **kwargs)
+            self.scaler = StandardScaler()
 
-        if train:
-            self.train()
-
-    def initialize(self, solver='sgd', alpha=1e-5, hidden_layer_sizes=(5, 2), random_state=1, max_iter=10000):
-        self.net = MLPClassifier(
-            solver=solver,
-            alpha=alpha,
-            hidden_layer_sizes=hidden_layer_sizes,
-            random_state=random_state,
-            max_iter=max_iter,
-        )
-        self.scaler = StandardScaler()
-
-    def train(self):
-        visitors = VisitorBehavior.objects.all()
-        X = [visitor.sample for visitor in visitors]
-        y = [visitor.feature for visitor in visitors]
+    def train(self, data_points):
+        X = _scikit_1d_workaround([point.sample_list for point in data_points])
+        y = _scikit_1d_workaround([point.feature_list for point in data_points])
 
         self.scaler.fit(X)
         X = self.scaler.transform(X)
 
-        self.net.fit(X, y)
+        with catch_warnings(record=True) as training_warnings:
+            self.scikit_classifier.fit(X, y)
+        
+        net_data = pickle.dumps(self.scikit_classifier)
+        scaler_data = pickle.dumps(self.scaler)
 
-    def predict_conversion(self, visitors):
-        behaviors = [visitor.sample for visitor in visitors]
-        behaviors = self.scaler.transform(behaviors)
-        return self.net.predict(behaviors)
+        return net_data, scaler_data, training_warnings
 
-    def save(self):
-        with open(BRAIN_PATH, 'wb') as outf:
-            file_obj = File(outf)
-            pickle.dump(self.net, file_obj)
-
-        with open(SCALER_PATH, 'wb') as outf:
-            file_obj = File(outf)
-            pickle.dump(self.scaler, file_obj)
-
-    def load(self):
-        with open(BRAIN_PATH, 'rb') as inf:
-            self.net = pickle.load(inf)
-        with open(SCALER_PATH, 'rb') as inf:
-            self.scaler = pickle.load(inf)
-
-    def reload(self):
-        self.load()
+    def classify(self, sample):
+        X = self.scaler.transform(_scikit_1d_workaround(sample))
+        feature_raw = self.scikit_classifier.predict(X)
+        if not isinstance(feature_raw[0], Iterable):
+            return [[i] for i in feature_raw]
+        else:
+            return feature_raw

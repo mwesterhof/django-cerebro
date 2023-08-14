@@ -1,26 +1,48 @@
+from django.shortcuts import get_object_or_404
 from rest_framework import generics
 from rest_framework.response import Response
 
-from .models import VisitorBehavior
-from .net import VisitorClassifier
-from .serializers import VisitorBehaviorSerializer, VisitorBehaviorSerializerForPrediction
+from .models import Classifier, DataPoint
+from .net import DataPointClassifier
+from .serializers import get_serializer_from_config
 
 
-class VisitorBehaviorListCreate(generics.ListCreateAPIView):
-    queryset = VisitorBehavior.objects.all()
-    serializer_class = VisitorBehaviorSerializer
+class DynamicSerializerViewMixin:
+    def dispatch(self, *args, **kwargs):
+        self.config = self.get_config()
+        return super().dispatch(*args, **kwargs)
+
+    def get_config(self):
+        return get_object_or_404(Classifier, slug=self.kwargs['slug'])
+
+    def get_serializer_class(self):
+        return get_serializer_from_config(self.config)
 
 
-class PredictionView(generics.GenericAPIView):
-    serializer_class = VisitorBehaviorSerializerForPrediction
+class DataPointCreate(DynamicSerializerViewMixin, generics.ListCreateAPIView):
+    def get_queryset(self, *args, **kwargs):
+        return DataPoint.objects.filter(config=self.config)
 
-    def post(self, request, format=None):
-        creation_kwargs = {k: v for k, v in request.POST.items() if k != 'csrfmiddlewaretoken'}
-        behavior = VisitorBehavior(**creation_kwargs)
-        prediction = VisitorClassifier().predict_conversion([behavior])
 
-        creation_kwargs['conversion_target_a'] = prediction[0][0]
-        creation_kwargs['conversion_target_b'] = prediction[0][1]
+class PredictionView(DynamicSerializerViewMixin, generics.GenericAPIView):
+    def get_serializer_class(self):
+        return get_serializer_from_config(self.config, readonly_features=True)
 
-        serializer = self.serializer_class(VisitorBehavior(**creation_kwargs))
-        return Response(serializer.data)
+    def post(self, request, **kwargs):
+        serializer_class = self.get_serializer_class()
+        request_serializer = serializer_class(data=request.data)
+
+        if request_serializer.is_valid():
+            sample = list(request_serializer.validated_data.values())
+            feature = self.config.classify([sample])[0]
+            datapoint_kwargs = {}
+
+            for i, sample_name in enumerate(self.config.samples.values_list('name', flat=True)):
+                datapoint_kwargs[sample_name] = sample[i]
+
+            for i, feature_name in enumerate(self.config.features.values_list('name', flat=True)):
+                datapoint_kwargs[feature_name] = feature[i]
+
+            return Response(datapoint_kwargs)
+
+        return super().post(request, **kwargs)

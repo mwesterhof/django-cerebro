@@ -1,5 +1,5 @@
 from django.core.management.base import BaseCommand, CommandError
-from brain.net import VisitorClassifier
+from brain.models import Classifier
 
 
 class Command(BaseCommand):
@@ -9,5 +9,5 @@ class Command(BaseCommand):
     #     parser.add_argument('foo', nargs='+', type=int)
 
     def handle(self, *args, **options):
-        vc = VisitorClassifier(load=False, train=True)
-        vc.save()
+        for config in Classifier.objects.all():
+            config.train()
