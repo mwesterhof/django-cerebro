@@ -3,7 +3,13 @@ from rest_framework import serializers
 from .models import DataPoint
 
 
-class DataPointSerializerBase(serializers.Serializer):
+class DataPointSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DataPoint
+        fields = ['id', 'timestamp', 'samples', 'features']
+
+
+class DynamicDataPointSerializerBase(serializers.Serializer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -33,7 +39,7 @@ class DataPointSerializerBase(serializers.Serializer):
 def get_serializer_from_config(config, readonly_features=False):
     return type(
         'DataPointSerializer',
-        (DataPointSerializerBase,),
+        (DynamicDataPointSerializerBase,),
         dict(
             [
                 ('config', config)

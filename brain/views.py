@@ -1,10 +1,11 @@
 from django.shortcuts import get_object_or_404
+from django.utils.dateparse import parse_datetime
 from rest_framework import generics
 from rest_framework.response import Response
 
 from .models import Classifier, DataPoint
 from .net import DataPointClassifier
-from .serializers import get_serializer_from_config
+from .serializers import DataPointSerializer, get_serializer_from_config
 
 
 class DynamicSerializerViewMixin:
@@ -46,3 +47,22 @@ class PredictionView(DynamicSerializerViewMixin, generics.GenericAPIView):
             return Response(datapoint_kwargs)
 
         return super().post(request, **kwargs)
+
+
+class DataPointList(generics.ListAPIView):
+    serializer_class = DataPointSerializer
+
+    def _get_fixed_query(self):
+        query = {k: v for k, v in self.request.GET.items()}
+        for key in query:
+            variable = key.split('__')[0]
+            if variable in ['samples', 'features']:
+                query[key] = int(query[key])
+            elif variable == 'timestamp':
+                query[key] = parse_datetime(query[key])
+
+        return query
+
+    def get_queryset(self):
+        query = self._get_fixed_query()
+        return DataPoint.objects.filter(config__slug=self.kwargs['slug'], **query)
