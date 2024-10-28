@@ -37,7 +37,7 @@ JAZZMIN_SETTINGS = {
     'site_brand': 'CereBro admin',
     'welcome_sign': 'Welcome to the CereBro admin',
     'site_logo': 'site_logo.png',
-    'copyright': 'Lukkien',
+    'copyright': 'Marco Westerhof',
     'show_ui_builder': True,
     'icons': {
         'brain.Classifier': 'fas fa-graduation-cap',
